@@ -122,6 +122,14 @@ def generateFont():
 		print(f"Generating {miracode.fontname}...")
 		miracode.generate(outputDir + f"Miracode{suffix}.ttf")
 
+	print("Generating Miracode.ttc...")
+	fonts[0][0].generateTtc(
+		outputDir + "Miracode.ttc",
+		[font for font, _, _, _ in fonts[1:]],
+		ttcflags=("merge",),
+		layer=1,
+	)
+
 def test():
 	print("Testing...")
 	tests = json.load(open("./tests.json"))["tests"]
