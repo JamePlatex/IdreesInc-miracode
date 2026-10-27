@@ -51,7 +51,7 @@ def generateFont():
 		miracode.fullname = "Miracode" if not suffix else f"Miracode {styleName}"
 		miracode.copyright = "Idrees Hassan, https://github.com/IdreesInc/Miracode"
 		miracode.encoding = "UnicodeFull"
-		miracode.version = "1.0"
+		miracode.version = "1.1"
 		miracode.weight = "Bold" if bold else "Regular"
 		miracode.macstyle = macstyle
 		miracode.os2_stylemap = stylemap
@@ -70,10 +70,10 @@ def generateFont():
 		fonts.append((miracode, suffix, bold, italic))
 
 	for character in characters:
-		for miracode, _, _, _ in fonts:
+		for miracode, _, bold, _ in fonts:
 			miracode.createChar(character["codepoint"], character["name"])
 			pen = miracode[character["name"]].glyphPen()
-			drawCharacter(character, miracode[character["name"]], pen)
+			drawCharacter(character, miracode[character["name"]], pen, bold=bold)
 			miracode[character["name"]].width = PIXEL_SIZE * 6
 	print(f"Generated {len(characters)} characters")
 
@@ -87,12 +87,12 @@ def generateFont():
 
 	for ligature in ligatures:
 		glyphName = ligature["name"].replace(" ", "_")
-		for miracode, _, _, _ in fonts:
+		for miracode, _, bold, _ in fonts:
 			if ligature.get("pixels"):
 				# Basic ligature
 				lig = miracode.createChar(-1, glyphName)
 				pen = miracode[glyphName].glyphPen()
-				drawCharacter(ligature, lig, pen)
+				drawCharacter(ligature, lig, pen, bold=bold)
 			elif ligature.get("chain"):
 				# Chain ligature
 				chain = ligature["chain"]
@@ -101,7 +101,7 @@ def generateFont():
 				xOffset = 0
 				for character in chain:
 					if character.get("pixels") or character.get("reference") or character.get("diacritic"):
-						xOffset = drawCharacter(character, lig, pen, xOffset)
+						xOffset = drawCharacter(character, lig, pen, xOffset, bold=bold)
 					else:
 						print(f"Unexpected character in ligature {ligature['name']}: {character}")
 					xOffset += PIXEL_SIZE
@@ -113,14 +113,11 @@ def generateFont():
 
 	print(f"Generated {len(ligatures)} ligatures")
 	for miracode, suffix, bold, italic in fonts:
-		if bold or italic:
+		if italic:
 			for glyph in miracode.glyphs():
 				if not glyph.foreground:
 					continue
-				if bold:
-					glyph.stroke("circular", PIXEL_SIZE * 0.1, "round", "round")
-				if italic:
-					glyph.transform((1, 0, ITALIC_RATIO, 1, 0, 0))
+				glyph.transform((1, 0, ITALIC_RATIO, 1, 0, 0))
 				glyph.removeOverlap()
 		print(f"Generating {miracode.fontname}...")
 		miracode.generate(outputDir + f"Miracode{suffix}.ttf")
@@ -585,7 +582,7 @@ def getEdgesPerPoint(edges):
 		edgesPerPoint[edge[1]].append(edge)
 	return edgesPerPoint
 
-def drawCharacter(character, glyph, pen, xOffset = 0):
+def drawCharacter(character, glyph, pen, xOffset = 0, bold = False):
 	# print("Drawing character", character["name"])
 	pixels, attributes = resolveCharacterPixels(character)
 	if not pixels:
@@ -609,7 +606,7 @@ def drawCharacter(character, glyph, pen, xOffset = 0):
 		leftMargin += character["leftMargin"]
 	left = leftMargin * PIXEL_SIZE + xOffset
 
-	STROKE = 192
+	STROKE = 192 + (PIXEL_SIZE * 0.200 if bold else 0)
 	HALF = STROKE / 2
 	DOT_RADIUS = HALF * 1.5
 
